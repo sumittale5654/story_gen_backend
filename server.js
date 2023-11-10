@@ -1,62 +1,67 @@
 // backend/server.js
 
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 const axios = require("axios");
+// const openai = require("openai");
+require("dotenv").config();
 const openai = require("openai");
-require("dotenv").config(); // Load environment variables from .env file
 
 
-// Initialize the OpenAI API with your API key
-const openaiApiKey = "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";
-// Log the API key to the console for verification
+
+
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
 const openaiClient = new openai({
-  apiKey: "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",
+  apiKey: "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",
 });
 
-// Middleware for parsing JSON requests
+app.use(cors());
 app.use(express.json());
 
 
-// Define your API routes here
-// Route for generating a story using OpenAI's GPT-3
-app.post("/api/generate-story", async (req, res) => {
+app.post("/generate-story", async (req, res) => {
   try {
     const { prompt } = req.body;
-    // Use the OpenAI API to generate a story
     const response = await openaiClient.completions.create({
-      engine: "davinci", 
+      model: "text-davinci-003",
       prompt: prompt,
-      max_tokens: 100, 
+      max_tokens: 100,
+      temperature : 0,
     });
+    res.header("Access-Control-Allow-Origin", "*");
+
+    console.log(response)
+
+
     if (response.choices && response.choices.length > 0) {
       const generatedStory = response.choices[0].text;
-
-      // Return the generated story as a response
       res.json({ story: generatedStory });
     } else {
       console.error("Empty or invalid response from OpenAI API:", response);
-      res.status(500).json({ error: "An error occurred while generating the story." });
+      res
+        .status(500)
+        .json({ error: "An error occurred while generating the story." });
     }
   } catch (error) {
     console.error("Error generating story:", error);
-    res.status(500).json({ error: "An error occurred while generating the story." });
+    res
+      .status(500)
+      .json({ error: "An error occurred while generating the story." });
   }
 });
 
-
-
-// Route for saving a story
-//create a array to store saved stories
 const savedStories = [];
 
-// Route for saving a story to the in-memory array
+
+
 app.post("/api/save-story", async (req, res) => {
   try {
     const { story } = req.body;
 
-    //Push the story object into the savedStories array
+   
     savedStories.push(story);
 
     res.json({ message: "Story saved successfully" });
@@ -76,7 +81,6 @@ app.get("/api/saved-stories", (req, res) => {
       .json({ error: "An error occurred while retrieving saved stories." });
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
